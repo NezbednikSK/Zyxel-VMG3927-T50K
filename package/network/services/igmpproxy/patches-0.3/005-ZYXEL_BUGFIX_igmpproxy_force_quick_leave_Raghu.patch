@@ -1,0 +1,43 @@
+Index: igmpproxy-0.3/src/request.c
+===================================================================
+--- igmpproxy-0.3.orig/src/request.c	2021-01-05 01:44:01.000000000 +0800
++++ igmpproxy-0.3/src/request.c	2021-06-11 11:55:33.858177277 +0800
+@@ -111,6 +111,8 @@
+ */
+ void acceptLeaveMessage(uint32_t src, uint32_t group) {
+     struct IfDesc   *sourceVif;
++	//force fast leave
++	struct Config *conf = getCommonConfig();
+ 
+     my_log(LOG_DEBUG, 0,
+         "Got leave message from %s to %s. Starting last member detection.",
+@@ -134,18 +136,20 @@
+     // We have a IF so check that it's an downstream IF.
+     if(sourceVif->state == IF_STATE_DOWNSTREAM) {
+ 
+-        GroupVifDesc   *gvDesc;
+-        gvDesc = (GroupVifDesc*) malloc(sizeof(GroupVifDesc));
+-
+         // Tell the route table that we are checking for remaining members...
+         setRouteLastMemberMode(group, src);
++        
++		if(!conf->fastUpstreamLeave) {	//force fast leave
++			GroupVifDesc   *gvDesc;
++			gvDesc = (GroupVifDesc*) malloc(sizeof(GroupVifDesc));
++
++			// Call the group spesific membership querier...
++			gvDesc->group = group;
++			// gvDesc->vifAddr = sourceVif->InAdr.s_addr;
++			gvDesc->started = 0;
+ 
+-        // Call the group spesific membership querier...
+-        gvDesc->group = group;
+-        // gvDesc->vifAddr = sourceVif->InAdr.s_addr;
+-        gvDesc->started = 0;
+-
+-        sendGroupSpecificMemberQuery(gvDesc);
++			sendGroupSpecificMemberQuery(gvDesc);
++		}
+ 
+     } else {
+         // just ignore the leave request...

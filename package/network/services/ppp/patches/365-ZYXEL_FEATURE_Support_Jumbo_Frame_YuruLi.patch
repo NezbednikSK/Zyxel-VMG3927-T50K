@@ -1,0 +1,30 @@
+Index: ppp-2.4.3/pppd/demand.c
+===================================================================
+--- ppp-2.4.3.orig/pppd/demand.c	2020-02-26 15:45:24.820146937 +0800
++++ ppp-2.4.3/pppd/demand.c	2020-02-27 09:35:26.615757432 +0800
+@@ -98,7 +98,7 @@
+     flush_flag = 0;
+     fcs = PPP_INITFCS;
+ 
+-    netif_set_mtu(0, MIN(lcp_allowoptions[0].mru, PPP_MRU));
++    netif_set_mtu(0, MIN(lcp_allowoptions[0].mru, PPP_MAXMRU));
+     if (ppp_send_config(0, PPP_MRU, (u_int32_t) 0, 0, 0) < 0
+ 	|| ppp_recv_config(0, PPP_MRU, (u_int32_t) 0, 0, 0) < 0)
+ 	    fatal("Couldn't set up demand-dialled PPP interface: %m");
+Index: ppp-2.4.3/pppd/plugins/rp-pppoe/plugin.c
+===================================================================
+--- ppp-2.4.3.orig/pppd/plugins/rp-pppoe/plugin.c	2020-02-27 09:33:15.453234069 +0800
++++ ppp-2.4.3/pppd/plugins/rp-pppoe/plugin.c	2020-02-27 09:34:20.500751499 +0800
+@@ -450,10 +450,12 @@
+ 	    lcp_allowoptions[0].neg_pcompression = 0;
+ 	    lcp_wantoptions[0].neg_pcompression = 0;
+ 
++#if 0 //Support BRCM Jumbo Frame
+         if (lcp_allowoptions[0].mru > MAX_PPPOE_MTU)
+ 	    lcp_allowoptions[0].mru = MAX_PPPOE_MTU;
+         if (lcp_wantoptions[0].mru > MAX_PPPOE_MTU)
+ 	    lcp_wantoptions[0].mru = MAX_PPPOE_MTU;
++#endif
+ 
+ 	    ccp_allowoptions[0].deflate = 0 ;
+ 	    ccp_wantoptions[0].deflate = 0 ;

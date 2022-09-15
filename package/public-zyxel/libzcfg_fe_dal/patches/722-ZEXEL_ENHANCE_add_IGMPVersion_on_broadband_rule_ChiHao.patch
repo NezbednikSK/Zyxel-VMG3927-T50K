@@ -1,0 +1,111 @@
+Index: libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/broadband/zcfg_fe_dal_broadband.c	2020-01-03 15:42:39.158872144 +0800
++++ libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c	2020-01-03 15:55:26.424777279 +0800
+@@ -61,6 +61,9 @@
+ 	{"FullConeEnabled",		dalType_boolean,	0,	0,	NULL},
+ 	//IGMP/MLD
+ 	{"IGMPEnable",			dalType_boolean,	0,	0,	NULL},
++#ifdef ABUE_CUSTOMIZATION	
++	{"IGMPVersion", 		dalType_int, 	    2, 	3, 	NULL,	NULL,	NULL},
++#endif	
+ 	{"MLDEnable",			dalType_boolean,	0,	0,	NULL},
+ 	//DNS
+ 	{"ipDnsStatic",			dalType_boolean,	0,	0,	NULL},
+@@ -2030,7 +2033,9 @@
+ 	struct json_object *pramJobj = NULL;
+ 	bool igmpEnable = false, mldEnable = false;
+ 	bool CurrIgmpEnable = false, CurrMldEnable = false;
+-	
++#ifdef ABUE_CUSTOMIZATION	
++	int igmpVersion = 0;
++#endif
+ 	if(igmpObj == NULL){ //add case
+ 		IID_INIT(igmpIid);
+ 		zcfgFeObjJsonGetWithoutUpdate(RDM_OID_ZY_IGMP, &igmpIid, &igmpObj);
+@@ -2062,36 +2067,59 @@
+ 	
+ 
+ 	/* IGMP */
++#ifdef ABUE_CUSTOMIZATION	
++	igmpVersion = json_object_get_int(json_object_object_get(Jobj, "IGMPVersion"));
++#endif
+ 	Interface = json_object_get_string(json_object_object_get(igmpObj, "Interface"));
+ 	if(CurrIgmpEnable && igmpEnable){ //enable to enable
++#ifdef ABUE_CUSTOMIZATION	
++		json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
++#else
+ 		if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
++#endif		
+ 	}
+ 	else if(CurrIgmpEnable && !igmpEnable){ ////enable to disable
+ 		if(genNewInterface(",", newInterface, Interface, ipIfacePath, false)){
+ 			json_object_object_add(igmpObj, "Interface", json_object_new_string(newInterface));
++#ifdef ABUE_CUSTOMIZATION			
++			json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
++#else
+ 		}
+ 		else{
+ 			if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
++#endif			
+ 		}
+ 	}
+ 	else if(!CurrIgmpEnable && igmpEnable){ //disable to enable
+ #ifndef ZyXEL_WEB_GUI_SINGLE_IGMP_MLD
+ 		if(genNewInterface(",", newInterface, Interface, ipIfacePath, true)){
+ 			json_object_object_add(igmpObj, "Interface", json_object_new_string(newInterface));
++#ifdef ABUE_CUSTOMIZATION			
++			json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
++#endif
+ 		}
+ #else
+ 		char IgmpIntf[512] = {0};
+ 		DisableSameWanTypeIgmpMld(IgmpIntf, Interface, ipIfacePath, 0);
+ 		if(genNewInterface(",", newInterface, IgmpIntf, ipIfacePath, true)){
+ 			json_object_object_add(igmpObj, "Interface", json_object_new_string(newInterface));
++#ifdef ABUE_CUSTOMIZATION			
++			json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
++#endif
+ 		}
+ #endif	
+ 		else{
++#ifndef ABUE_CUSTOMIZATION			
+ 			if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
++#endif			
+ 		}
+ 	}
+ 	else{//do nothing for disable to disable
++#ifdef ABUE_CUSTOMIZATION	
++		json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
++#else
+ 		if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
++#endif		
+ 	}
+ 
+ 	/* MLD */
+@@ -4173,12 +4201,14 @@
+ 	bool v4enable, v6enable;
+ #ifdef ABUE_CUSTOMIZATION
+ 	bool Enable_DSLite;
++	int igmpVersion = 0;
+ #endif	
+ 	const char *Interface;
+ 	const char *pppPassTh;
+ 	bool enable_6RD = false;
+ 	char v6RD_Type[16] = {0};
+ 	const char *lanport = NULL;
++
+ 	if(!strcmp(CurrEncapsulation, "IPoE") || !strcmp(CurrEncapsulation, "IPoA")){
+ 		v4enable = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv4Enable"));
+ 		v6enable = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Enable"));		
+@@ -4309,6 +4339,10 @@
+ 	if(igmpObj) zcfgFeJsonObjFree(igmpObj);
+ 	zcfgFeObjJsonGetWithoutUpdate(RDM_OID_ZY_IGMP, &igmpIid, &igmpObj);
+ 	Interface = json_object_get_string(json_object_object_get(igmpObj, "Interface"));
++#ifdef ABUE_CUSTOMIZATION		
++	igmpVersion = json_object_get_int(json_object_object_get(igmpObj, "IgmpVersion"));
++	json_object_object_add(pramJobj, "IGMPVersion", json_object_new_int(igmpVersion));
++#endif	
+ 	if(strstr(Interface, ipIfacePath))
+ 		json_object_object_add(pramJobj, "IGMPEnable", json_object_new_boolean(true));
+ 	else

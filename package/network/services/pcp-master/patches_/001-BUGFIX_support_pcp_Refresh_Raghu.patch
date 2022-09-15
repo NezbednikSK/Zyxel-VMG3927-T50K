@@ -1,0 +1,21 @@
+Index: pcp-master/pcp_app/pcp_app.c
+===================================================================
+--- pcp-master.orig/pcp_app/pcp_app.c	2020-06-03 10:05:44.387685938 +0800
++++ pcp-master/pcp_app/pcp_app.c	2020-06-03 10:06:47.612036838 +0800
+@@ -633,11 +633,13 @@
+         break;
+     }
+ 
+-
+-    if (p.has_mappeer_data && p.opt_lifetime && (p.opt_nonce[0] == 0) 
+-					&& (p.opt_nonce[1] ==0) && (p.opt_nonce[2] == 0)) {
++    if (p.has_mappeer_data && p.opt_lifetime) {
+         print_ext_addr(flow);
+     }
++    /*if (p.has_mappeer_data && p.opt_lifetime && (p.opt_nonce[0] == 0) 
++					&& (p.opt_nonce[1] ==0) && (p.opt_nonce[2] == 0)) {
++        print_ext_addr(flow);
++    }*/
+     if (p.has_sadscp_data) {
+         print_get_dscp(flow);
+     }

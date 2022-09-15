@@ -1,0 +1,186 @@
+Index: libzcfg_fe_tr98-1.0/Makefile
+===================================================================
+--- libzcfg_fe_tr98-1.0.orig/Makefile	2019-12-10 19:28:43.219805079 +0800
++++ libzcfg_fe_tr98-1.0/Makefile	2019-12-10 19:28:43.239805078 +0800
+@@ -112,6 +112,10 @@
+ CFLAGS += -DZYXEL_SUPPORT_TR98_LOGIN_ACCOUNT
+ endif
+ 
++ifeq ($(CONFIG_ABUE_CUSTOMIZATION),y)
++CFLAGS += -DABUE_CUSTOMIZATION
++endif
++
+ #define SONIQ
+ ifeq ($(CONFIG_ZYXEL_SONIQ),y)
+ 	CFLAGS += -DBUILD_SONIQ
+Index: libzcfg_fe_tr98-1.0/wanDev.c
+===================================================================
+--- libzcfg_fe_tr98-1.0.orig/wanDev.c	2019-12-10 19:28:43.227805079 +0800
++++ libzcfg_fe_tr98-1.0/wanDev.c	2019-12-10 19:30:36.855801801 +0800
+@@ -2984,6 +2984,24 @@
+ 			paramList++;
+ 			continue;
+ 		}	
++		else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")) {
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_Enable_DSLite");
++			json_object_object_add(*tr98Jobj, paramList->name, JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")) {
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses");
++			json_object_object_add(*tr98Jobj, paramList->name, JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")) {
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLite_Type");
++			json_object_object_add(*tr98Jobj, paramList->name, JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
+ #endif
+ 
+ 		/*Not defined in tr181, give it a default value*/
+@@ -3715,7 +3733,22 @@
+ 					paramList++;	
+ 					continue;
+ 				}
+-			}			
++			}	
++			else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_Enable_DSLite", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLite_Type", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
+ #endif
+ #ifdef ISKON_CUSTOMIZATION 
+ 		else if(!strcmp(paramList->name, "X_ZYXEL_RIPEnable"))
+@@ -5835,6 +5868,24 @@
+ 			paramList++;
+ 			continue;
+ 		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_Enable_DSLite");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_Enable_DSLite", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_DSLiteRelayIPv6Addresses", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLite_Type");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_DSLite_Type", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
+     	else if(!strcmp(paramList->name, "DNSEnabled")) {
+ 			if(dnsSrvJobj != NULL) {
+ 				paramValue = json_object_object_get(dnsSrvJobj, "Enable");
+@@ -6010,7 +6061,25 @@
+ 			}
+ 			paramList++;
+ 			continue;
+-		}						
++		}	
++		else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_Enable_DSLite");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_Enable_DSLite", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_DSLiteRelayIPv6Addresses", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}
++		else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")){
++			paramValue = json_object_object_get(ipIfaceJobj, "X_ZYXEL_DSLite_Type");
++			json_object_object_add(*tr98Jobj, "X_ZYXEL_DSLite_Type", JSON_OBJ_COPY(paramValue));
++			paramList++;
++			continue;
++		}	
+ #endif
+ 		else {
+ 
+@@ -6445,6 +6514,21 @@
+ 				paramList++;
+ 				continue;
+ 			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_Enable_DSLite", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}	
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLite_Type", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
+ 			else if(!strcmp(paramList->name, "X_ZYXEL_ConcurrentWan")) {
+ 				json_object_object_add(ipIfaceJobj, "X_ZYXEL_ConcurrentWan", JSON_OBJ_COPY(paramValue));
+ 				paramList++;
+@@ -6641,6 +6725,21 @@
+ 					continue;
+ 				}
+ 			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_Enable_DSLite")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_Enable_DSLite", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLiteRelayIPv6Addresses")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLiteRelayIPv6Addresses", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
++			else if(!strcmp(paramList->name, "X_ZYXEL_DSLite_Type")) {
++				json_object_object_add(ipIfaceJobj, "X_ZYXEL_DSLite_Type", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
+ #endif
+ #ifdef ISKON_CUSTOMIZATION 
+ 		else if(!strcmp(paramList->name, "X_ZYXEL_RIPEnable"))
+Index: libzcfg_fe_tr98-1.0/wanDev_parameter.h
+===================================================================
+--- libzcfg_fe_tr98-1.0.orig/wanDev_parameter.h	2019-12-10 19:28:43.187805080 +0800
++++ libzcfg_fe_tr98-1.0/wanDev_parameter.h	2019-12-10 19:28:43.423805073 +0800
+@@ -484,6 +484,7 @@
+ 	{ "X_ZYXEL_ActiveV6DefaultGateway", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
+ 	{ "X_ZYXEL_Enable_DSLite", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
+ 	{ "X_ZYXEL_DSLiteRelayIPv6Addresses", PARAMETER_ATTR_WRITE, 73, json_type_string},
++	{ "X_ZYXEL_DSLite_Type", PARAMETER_ATTR_WRITE, 8, json_type_string},
+ #endif
+         { "X_ZYXEL_IfName", PARAMETER_ATTR_READONLY, 18, json_type_string},
+ #ifdef ISKON_CUSTOMIZATION 
+@@ -760,6 +761,9 @@
+ #ifdef ISKON_CUSTOMIZATION	
+ 	{ "X_ZYXEL_RIPEnable", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
+ #endif
++	{ "X_ZYXEL_Enable_DSLite", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
++	{ "X_ZYXEL_DSLiteRelayIPv6Addresses", PARAMETER_ATTR_WRITE, 73, json_type_string},
++	{ "X_ZYXEL_DSLite_Type", PARAMETER_ATTR_WRITE, 8, json_type_string},
+ 	{ "X_ZYXEL_IPCPEnable", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
+ 	{ "X_ZYXEL_IPv6CPEnable", PARAMETER_ATTR_WRITE, 0, json_type_boolean},
+ 	{ "X_ZYXEL_LocalInterfaceIdentifier", PARAMETER_ATTR_READONLY|PARAMETER_ATTR_ACTIVENOTIFY, 65, json_type_string},

@@ -1,0 +1,29 @@
+Index: igmpproxy-0.3/src/config.c
+===================================================================
+--- igmpproxy-0.3.orig/src/config.c	2021-01-05 01:44:01.000000000 +0800
++++ igmpproxy-0.3/src/config.c	2021-05-27 10:11:46.634720627 +0800
+@@ -78,7 +78,7 @@
+     commonConfig.startupQueryCount = DEFAULT_ROBUSTNESS;
+ 
+     // Default values for leave intervals...
+-    commonConfig.lastMemberQueryInterval = INTERVAL_QUERY_RESPONSE;
++    commonConfig.lastMemberQueryInterval = LASTMEMBERQUERYINTERVAL;
+     commonConfig.lastMemberQueryCount    = DEFAULT_ROBUSTNESS;
+ 
+     // If 1, a leave message is sent upstream on leave messages from downstream.
+Index: igmpproxy-0.3/src/igmpproxy.h
+===================================================================
+--- igmpproxy-0.3.orig/src/igmpproxy.h	2021-01-05 01:44:01.000000000 +0800
++++ igmpproxy-0.3/src/igmpproxy.h	2021-05-27 10:11:11.627805064 +0800
+@@ -127,9 +127,10 @@
+ #define DEFAULT_RATELIMIT      0
+ 
+ // Define timer constants (in seconds...)
+-#define INTERVAL_QUERY          125
++#define INTERVAL_QUERY          60
+ #define INTERVAL_QUERY_RESPONSE  10
+ //#define INTERVAL_QUERY_RESPONSE  10
++#define LASTMEMBERQUERYINTERVAL  1
+ 
+ #define ROUTESTATE_NOTJOINED            0   // The group corresponding to route is not joined
+ #define ROUTESTATE_JOINED               1   // The group corresponding to route is joined

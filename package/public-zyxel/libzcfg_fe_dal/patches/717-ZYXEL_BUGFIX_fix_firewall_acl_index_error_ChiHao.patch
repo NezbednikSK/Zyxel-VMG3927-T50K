@@ -1,0 +1,54 @@
+Index: libzcfg_fe_dal-1.0/security/firewall/zcfg_fe_dal_firewall_acl.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/security/firewall/zcfg_fe_dal_firewall_acl.c	2019-12-11 13:17:52.549954426 +0800
++++ libzcfg_fe_dal-1.0/security/firewall/zcfg_fe_dal_firewall_acl.c	2019-12-11 13:20:43.697124204 +0800
+@@ -260,13 +260,23 @@
+ 		}
+ 
+ 		if(ret == ZCFG_SUCCESS){
++#if 0//IChia 20190918			
+ 			json_object_object_foreach(Jobj, key, val){
+ 				if(!strcmp(key, "Index")){
+ 					continue;
+ 				}
+ 				json_object_object_add(aclObj, key, val);
+ 			}
+-			
++#else
++			json_object_object_foreach(Jobj, key, val)
++			{
++				if(!strcmp(key, "Index"))
++				{
++					continue;
++				}
++				json_object_object_add(aclObj, key, JSON_OBJ_COPY(val));
++			}
++#endif			
+ 			if((paramObj = json_object_object_get(Jobj, "IPVersion")) != NULL){
+ 				charVal = json_object_get_string(paramObj);
+ 				if(!strcmp(charVal, "IPv4"))
+@@ -486,12 +496,24 @@
+ 			}
+ 		}
+ 		if((ret = zcfgFeObjJsonGetWithoutUpdate(RDM_OID_FIREWALL_CHAIN_RULE, &aclIid, &aclObj)) == ZCFG_SUCCESS){
++#if 0 //IChia 20190917			
+ 			json_object_object_foreach(Jobj, key, val){
+ 				if(!strcmp(key, "Index")){
+ 					continue;
+ 				}
+ 				json_object_object_add(aclObj, key, val);
+ 			}
++#else
++			json_object_object_foreach(Jobj, key, val)
++			{
++				if(!strcmp(key, "Index"))
++				{
++					continue;
++				}
++				json_object_object_add(aclObj, key, JSON_OBJ_COPY(val));
++			}
++#endif
++
+ 			if((paramObj = json_object_object_get(Jobj, "IPVersion")) != NULL){
+ 				charVal = json_object_get_string(paramObj);
+ 				if(!strcmp(charVal, "IPv4"))

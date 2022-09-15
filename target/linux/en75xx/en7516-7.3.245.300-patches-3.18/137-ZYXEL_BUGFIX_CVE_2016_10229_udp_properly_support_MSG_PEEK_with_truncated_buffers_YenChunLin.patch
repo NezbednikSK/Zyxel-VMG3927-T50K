@@ -1,0 +1,54 @@
+Index: linux-3.18.21/net/ipv4/udp.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv4/udp.c	2021-01-22 15:14:50.691823111 +0800
++++ linux-3.18.21/net/ipv4/udp.c	2021-01-22 18:19:28.843735864 +0800
+@@ -1260,6 +1260,7 @@
+ 	int peeked, off = 0;
+ 	int err;
+ 	int is_udplite = IS_UDPLITE(sk);
++	bool checksum_valid = false;
+ 	bool slow;
+ 
+ 	if (flags & MSG_ERRQUEUE)
+@@ -1286,11 +1287,12 @@
+ 	 */
+ 
+ 	if (copied < ulen || UDP_SKB_CB(skb)->partial_cov) {
+-		if (udp_lib_checksum_complete(skb))
++		checksum_valid = !udp_lib_checksum_complete(skb);
++		if (!checksum_valid)
+ 			goto csum_copy_err;
+ 	}
+ 
+-	if (skb_csum_unnecessary(skb))
++	if (checksum_valid || skb_csum_unnecessary(skb))
+ 		err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr),
+ 					      msg->msg_iov, copied);
+ 	else {
+Index: linux-3.18.21/net/ipv6/udp.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv6/udp.c	2021-01-22 15:14:48.671823127 +0800
++++ linux-3.18.21/net/ipv6/udp.c	2021-01-22 18:20:57.411735167 +0800
+@@ -391,6 +391,7 @@
+ 	int peeked, off = 0;
+ 	int err;
+ 	int is_udplite = IS_UDPLITE(sk);
++	bool checksum_valid = false;
+ 	int is_udp4;
+ 	bool slow;
+ 
+@@ -422,11 +423,12 @@
+ 	 */
+ 
+ 	if (copied < ulen || UDP_SKB_CB(skb)->partial_cov) {
+-		if (udp_lib_checksum_complete(skb))
++		checksum_valid = !udp_lib_checksum_complete(skb);
++		if (!checksum_valid)
+ 			goto csum_copy_err;
+ 	}
+ 
+-	if (skb_csum_unnecessary(skb))
++	if (checksum_valid || skb_csum_unnecessary(skb))
+ 		err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr),
+ 					      msg->msg_iov, copied);
+ 	else {

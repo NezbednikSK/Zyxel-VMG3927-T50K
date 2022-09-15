@@ -1,0 +1,78 @@
+Index: linux-3.18.21/net/atm/br2684.c
+===================================================================
+--- linux-3.18.21.orig/net/atm/br2684.c	2021-05-17 14:21:08.572310118 +0800
++++ linux-3.18.21/net/atm/br2684.c	2021-05-21 17:00:33.548401737 +0800
+@@ -653,14 +653,22 @@
+ static const struct net_device_ops br2684_netdev_ops = {
+ 	.ndo_start_xmit 	= br2684_start_xmit,
+ 	.ndo_set_mac_address	= br2684_mac_addr,
+-	.ndo_change_mtu		= eth_change_mtu,
++#ifdef TCSUPPORT_MAX_PACKET_2000
++    	.ndo_change_mtu         = my_eth_change_mtu,
++#else
++    	.ndo_change_mtu         = eth_change_mtu,
++#endif
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
+ 
+ static const struct net_device_ops br2684_netdev_ops_routed = {
+ 	.ndo_start_xmit 	= br2684_start_xmit,
+ 	.ndo_set_mac_address	= br2684_mac_addr,
+-	.ndo_change_mtu		= eth_change_mtu
++#ifdef TCSUPPORT_MAX_PACKET_2000
++    	.ndo_change_mtu         = my_eth_change_mtu,
++#else
++    	.ndo_change_mtu         = eth_change_mtu,
++#endif
+ };
+ 
+ static void br2684_setup(struct net_device *netdev)
+Index: linux-3.18.21/net/ethernet/eth.c
+===================================================================
+--- linux-3.18.21.orig/net/ethernet/eth.c	2021-05-17 14:21:08.580310118 +0800
++++ linux-3.18.21/net/ethernet/eth.c	2021-05-21 16:42:43.948361601 +0800
+@@ -357,6 +357,30 @@
+ }
+ EXPORT_SYMBOL(eth_change_mtu);
+ 
++
++/************************************************************************
++    Funtcion:   my_eth_change_mtu
++    Description:
++    Calls:
++    Called by:      br2684_netdev_ops
++    Input:
++    Output:
++    Return:
++    Others:
++************************************************************************/
++#ifdef TCSUPPORT_MAX_PACKET_2000
++int my_eth_change_mtu(struct net_device *dev, int new_mtu)
++{
++        if (new_mtu < 68 || new_mtu > 2000)
++                return -EINVAL;
++        dev->mtu = new_mtu;
++        return 0;
++}
++EXPORT_SYMBOL(my_eth_change_mtu);
++#endif
++
++
++
+ int eth_validate_addr(struct net_device *dev)
+ {
+ 	if (!is_valid_ether_addr(dev->dev_addr))
+Index: linux-3.18.21/include/linux/etherdevice.h
+===================================================================
+--- linux-3.18.21.orig/include/linux/etherdevice.h	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/include/linux/etherdevice.h	2021-05-21 16:57:48.940395560 +0800
+@@ -45,6 +45,9 @@
+ void eth_commit_mac_addr_change(struct net_device *dev, void *p);
+ int eth_mac_addr(struct net_device *dev, void *p);
+ int eth_change_mtu(struct net_device *dev, int new_mtu);
++#ifdef TCSUPPORT_MAX_PACKET_2000
++int my_eth_change_mtu(struct net_device *dev, int new_mtu);
++#endif
+ int eth_validate_addr(struct net_device *dev);
+ 
+ struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,

@@ -1,0 +1,380 @@
+Index: pcp-master/pcp_app/pcp_app.c
+===================================================================
+--- pcp-master.orig/pcp_app/pcp_app.c	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/pcp_app/pcp_app.c	2020-03-27 16:41:14.303404050 +0800
+@@ -51,6 +51,8 @@
+ #include "unp.h"
+ #include "pcp_utils.h"
+ 
++
++
+ // function calling WSAStartup (used in pcp-server and pcp_app)
+ static int pcp_win_sock_startup() {
+     int err;
+@@ -178,6 +180,9 @@
+  OPTION(SHORT(u), udp,        "udp",                  NOARG , TABS2 "Set flow's protocol to UDP.") \
+  OPTION(SHORT(n), prot,       "protocol",             REQARG, TABS1 "Set flow's protocol by protocol number.") \
+  OPTION(SHORT(l), lifetime,   "lifetime",             REQARG, TABS1 "Set flow's lifetime(in seconds).") \
++ OPTION(SHORT(1), nonce1,   "nonce1",         REQARG, TABS2 "Set flow's nonce1 value") \
++ OPTION(SHORT(2), nonce2,   "nonce2",         REQARG, TABS2 "Set flow's nonce2 value") \
++ OPTION(SHORT(4), nonce3,   "nonce3",         REQARG, TABS2 "Set flow's nonce3 value") \
+  HELP_MSG(                                                          "") \
+  HELP_MSG(                                                          "PCP options for MAP/PEER operation:") \
+  IFDEF(PCP_FLOW_PRIORITY, \
+@@ -313,19 +318,20 @@
+     pcp_flow_info_t *info_buf = NULL;
+     pcp_flow_info_t *ret = pcp_flow_get_info(f,&cnt);
+     info_buf=ret;
+-
+-    printf("%-20s %-4s %-20s %5s   %-20s %5s   %-20s %5s %3s %5s %s\n",
++	
++	
++    /*printf("%-20s %-4s %-20s %5s   %-20s %5s   %-20s %5s %3s %5s %s\n",
+             "PCP Server IP",
+             "Prot",
+             "Int. IP", "port",
+             "Dst. IP", "port",
+             "Ext. IP", "port",
+-            "Res", "State","Ends");
++            "Res", "State","Ends");*/
+     for (; cnt>0; cnt--, ret++) {
+         char ntop_buffs[4][INET6_ADDRSTRLEN];
+-        char timebuf[32];
+-
+-        printf("%-20s %-4s %-20s %5hu   %-20s %5hu   %-20s %5hu %3d %5s %s",
++        //char timebuf[32];
++		pcpMsgSend(ret);
++       /* printf("%-20s %-4s %-20s %5hu   %-20s %5hu   %-20s %5hu %3d %5s %s",
+                 inet_ntop(AF_INET6, &ret->pcp_server_ip, ntop_buffs[0],
+                     sizeof(ntop_buffs[0])),
+                 ret->protocol == IPPROTO_TCP ? "TCP" : (
+@@ -342,11 +348,30 @@
+                 ret->pcp_result_code,
+                 decode_fresult(ret->result),
+                 ret->recv_lifetime_end == 0 ? " -\n" :
+-                        ctime_r(&ret->recv_lifetime_end, timebuf));
++                        ctime_r(&ret->recv_lifetime_end, timebuf));*/
++		
++		printf("pcp_server_ip:%s \n",
++					inet_ntop(AF_INET6, &ret->pcp_server_ip, ntop_buffs[0],
++                    sizeof(ntop_buffs[0])));					
++		printf("int_ip:%s \n", inet_ntop(AF_INET6, &ret->int_ip, ntop_buffs[1],
++                    sizeof(ntop_buffs[1])));
++					
++		printf("int_port:%d \n",
++                ntohs(ret->int_port));		
++		printf("ext_ip:%s \n",
++                inet_ntop(AF_INET6, &ret->ext_ip, ntop_buffs[3],
++                    sizeof(ntop_buffs[3])));					
++        printf("ext_port:%d \n",
++                ntohs(ret->ext_port));				
++        printf("pcp_result_code:%d \n",
++                ret->pcp_result_code);
++		printf("nonce:%d, %d, %d\n",
++                ret->nonce.n[0], ret->nonce.n[1], ret->nonce.n[2]);			
+     }
+     if (info_buf) {
+         free(info_buf);
+     }
++ 
+ }
+ 
+ static void print_get_dscp(pcp_flow_t* f)
+@@ -399,6 +424,7 @@
+     uint8_t dis_auto_discovery;
+     uint8_t opt_protocol;
+     uint32_t opt_lifetime;
++    uint32_t opt_nonce[3];
+     uint8_t pcp_version;
+     uint8_t fast_return;
+     uint32_t timeout;
+@@ -442,7 +468,8 @@
+ 
+ int main(int argc, char *argv[])
+ {
+-    struct pcp_params p;
++
++	struct pcp_params p;
+     struct sockaddr_storage destination_ip;
+     struct sockaddr_storage source_ip;
+     struct sockaddr_storage ext_ip;
+@@ -451,16 +478,22 @@
+     int ret_val = 1;
+     pcp_flow_t* flow = NULL;
+     struct pcp_server_list *server;
+-
++	
++	pcpEidInit();
+     srand(mix(clock(), (unsigned long)time(NULL), getpid()));
+ 
+     PD_SOCKET_STARTUP();
++	
++	//printf("%s:%d", __FUNCTION__,__LINE__);
+ 
+     memset(&source_ip, 0, sizeof(source_ip));
+     memset(&destination_ip, 0, sizeof(destination_ip));
++    memset(&p.opt_nonce, 0, sizeof(p.opt_nonce));
+ 
++	//printf("%s:%d", __FUNCTION__,__LINE__);
+     parse_params(&p, argc, argv);
+ 
++	//printf("%s:%d", __FUNCTION__,__LINE__);
+     if ((p.int_addr)&&(0!=sock_pton(p.int_addr, (struct sockaddr*)&source_ip))) {
+         fprintf(stderr, "Entered invalid internal address!\n");
+         exit(1);
+@@ -506,6 +539,14 @@
+         p.ctx = pcp_init(DISABLE_AUTODISCOVERY, NULL);
+     }
+ 
++	//printf("%s:%d", __FUNCTION__,__LINE__);	
++	if(p.opt_nonce[0] !=0 && p.opt_nonce[1]!=0 && p.opt_nonce[2]!=0)
++	{
++		memcpy(&p.ctx->opt_nonce, &p.opt_nonce, sizeof(p.ctx->opt_nonce));
++	}else
++		memset(&p.ctx->opt_nonce, 0, sizeof(p.ctx->opt_nonce));		
++
++	//printf("%s:%d", __FUNCTION__,__LINE__);
+     for (server = p.pcp_servers; server!=NULL; server=server->next) {
+         struct sockaddr *sa;
+ 
+@@ -592,7 +633,9 @@
+         break;
+     }
+ 
+-    if (p.has_mappeer_data) {
++
++    if (p.has_mappeer_data && p.opt_lifetime && (p.opt_nonce[0] == 0) 
++					&& (p.opt_nonce[1] ==0) && (p.opt_nonce[2] == 0)) {
+         print_ext_addr(flow);
+     }
+     if (p.has_sadscp_data) {
+@@ -689,6 +732,21 @@
+     p->opt_lifetime = (uint32_t)atoi(optarg);
+ }
+ 
++static inline void parse_opt_nonce1(struct pcp_params *p)
++{
++    p->opt_nonce[0] = (uint32_t)atoi(optarg);
++	//p.ctx->opt_nonce[0] = (uint32_t)atoi(optarg);
++}
++static inline void parse_opt_nonce2(struct pcp_params *p)
++{
++    p->opt_nonce[1] = (uint32_t)atoi(optarg);
++	//p.ctx->opt_nonce[1] = (uint32_t)atoi(optarg);
++}
++static inline void parse_opt_nonce3(struct pcp_params *p)
++{
++    p->opt_nonce[2] = (uint32_t)atoi(optarg);
++	//p.ctx->opt_nonce[2] = (uint32_t)atoi(optarg);
++}
+ #ifdef PCP_FLOW_PRIORITY
+ static inline void parse_opt_dscp_up(struct pcp_params *p)
+ {
+Index: pcp-master/libpcp/include/pcp.h
+===================================================================
+--- pcp-master.orig/libpcp/include/pcp.h	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/libpcp/include/pcp.h	2020-03-27 16:35:06.245772451 +0800
+@@ -235,6 +235,9 @@
+     pcp_state_failed
+ } pcp_fstate_e;
+ 
++struct zpcp_nonce {
++    uint32_t n[3];
++};
+ typedef struct pcp_flow_info {
+     pcp_fstate_e     result;
+     struct in6_addr  pcp_server_ip;
+@@ -249,6 +252,7 @@
+     uint16_t         dst_port;     //network byte order
+     uint8_t          protocol;
+     uint8_t          learned_dscp; //relevant only for flow created by pcp_learn_dscp
++	struct zpcp_nonce nonce;
+ } pcp_flow_info_t;
+ 
+ // Allocates info_buf by malloc, has to be freed by client when longer needed.
+Index: pcp-master/libpcp/src/pcp_api.c
+===================================================================
+--- pcp-master.orig/libpcp/src/pcp_api.c	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/libpcp/src/pcp_api.c	2020-03-27 16:35:06.245772451 +0800
+@@ -706,6 +706,8 @@
+         }
+ 
+         info_iter->recv_lifetime_end=fiter->recv_lifetime;
++		 memcpy(&info_iter->nonce, &fiter->kd.nonce, sizeof(struct pcp_nonce));
++		//info_iter->nonce=fiter->kd.nonce;
+         info_iter->lifetime_renew_s=fiter->lifetime;
+         info_iter->pcp_result_code=fiter->recv_result;
+         memcpy(&info_iter->int_ip, &fiter->kd.src_ip, sizeof(struct in6_addr));
+Index: pcp-master/libpcp/src/pcp_client_db.h
+===================================================================
+--- pcp-master.orig/libpcp/src/pcp_client_db.h	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/libpcp/src/pcp_client_db.h	2020-03-27 16:46:19.817994247 +0800
+@@ -111,6 +111,7 @@
+     void *flow_change_cb_arg;
+     pcp_recv_msg_t msg;
+     pcp_socket_vt_t *virt_socket_tb;
++	uint32_t opt_nonce[3];
+ };
+ 
+ struct pcp_flow_s {
+@@ -219,6 +220,9 @@
+     void *app_data;
+ };
+ 
++void pcpMsgSend(pcp_flow_info_t *f);
++void pcpEidInit();
++
+ typedef int (*pcp_db_flow_iterate)(pcp_flow_t *f, void *data);
+ 
+ typedef int (*pcp_db_server_iterate)(pcp_server_t *f, void *data);
+Index: pcp-master/libpcp/src/pcp_client_db.c
+===================================================================
+--- pcp-master.orig/libpcp/src/pcp_client_db.c	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/libpcp/src/pcp_client_db.c	2020-03-27 16:48:56.362232208 +0800
+@@ -44,6 +44,18 @@
+ #define EMPTY 0xFFFFFFFF
+ #define PCP_INIT_SERVER_COUNT 5
+ 
++/*ZyXEL zcfg*/
++#include "zcfg_common.h"
++#include "zcfg_fe_rdm_access.h"
++#include "zcfg_msg.h"
++//#include "zcfg_fe_rdm_string.h"
++#include "zcfg_rdm_oid.h"
++#include "zcfg_rdm_obj.h"
++#include "zcfg_fe_rdm_struct.h"
++#include "zcfg_eid.h"
++#include <json/json.h>
++
++
+ static uint32_t compute_flow_key(struct flow_key_data *kd)
+ {
+     uint32_t h=0;
+@@ -281,6 +293,7 @@
+ 
+     assert(ctx && ip);
+ 
++
+     //initialize array of pcp servers, if not already initialized
+     if (!ctx->pcp_db.pcp_servers) {
+         ctx->pcp_db.pcp_servers=(pcp_server_t *)calloc(PCP_INIT_SERVER_COUNT,
+@@ -337,7 +350,13 @@
+     ret->ctx=ctx;
+     ret->server_state=pss_allocated;
+     ret->pcp_version=PCP_MAX_SUPPORTED_VERSION;
+-    createNonce(&ret->nonce);
++	
++	if(ctx->opt_nonce[0]==0 && ctx->opt_nonce[1]==0 && ctx->opt_nonce[2]==0)
++	{
++		createNonce(&ret->nonce);
++	}else
++	   memcpy(&ret->nonce, &ctx->opt_nonce, sizeof(struct pcp_nonce));
++
+     ret->index=ret - ctx->pcp_db.pcp_servers;
+ 
+     PCP_LOG_END(PCP_LOGLVL_DEBUG);
+@@ -442,3 +461,71 @@
+     ctx->pcp_db.pcp_servers=NULL;
+     ctx->pcp_db.pcp_servers_length=0;
+ }
++void pcpMsgSend(pcp_flow_info_t *ret)
++{
++	printf("pcpMsgSend enter\n");
++	zcfgRet_t send_ret = ZCFG_SUCCESS;
++	char ntop_buffs[4][INET6_ADDRSTRLEN];
++	void *sendBuf = NULL;
++	//void *recvBuf = NULL;
++	zcfgMsg_t *sendMsgHdr = NULL;
++	char timebuf[32];
++	//zcfgMsg_t *recvMsgHdr = NULL;
++	int buf_size = 0;
++	
++
++	rdm_NatPortControl_t *pcpRule = NULL;
++	objIndex_t pcpIid;
++	
++	IID_INIT(pcpIid);
++	while(zcfgFeObjStructGetNext(RDM_OID_NAT_PORT_CONTROL, &pcpIid, (void **)&pcpRule) == ZCFG_SUCCESS) {
++		if(pcpRule->RequiredInternalPort == ntohs(ret->int_port)) {
++			zcfgFeObjStructFree(pcpRule);
++			break;
++		}
++		zcfgFeObjStructFree(pcpRule);
++	}
++	
++	struct json_object *sendmsg = NULL;
++	sendmsg = json_object_new_object();
++	json_object_object_add(sendmsg, "update", json_object_new_string("update"));	
++	json_object_object_add(sendmsg, "ExternalIPAddress", json_object_new_string(inet_ntop(AF_INET6, &ret->ext_ip, ntop_buffs[3],
++                    sizeof(ntop_buffs[3]))));	
++	//json_object_object_add(sendmsg, "InternalIPAddress", json_object_new_string());		
++	json_object_object_add(sendmsg, "PCPServer", json_object_new_string(inet_ntop(AF_INET6, &ret->pcp_server_ip, ntop_buffs[0],
++                    sizeof(ntop_buffs[0]))));
++	json_object_object_add(sendmsg, "InternalCpeIPAddress", json_object_new_string(inet_ntop(AF_INET6, &ret->int_ip, ntop_buffs[1],
++                    sizeof(ntop_buffs[1]))));
++	json_object_object_add(sendmsg, "RequiredInternalPort", json_object_new_int(ntohs(ret->int_port)));
++	//json_object_object_add(sendmsg, "RequiredPublicPort", json_object_new_int());
++	json_object_object_add(sendmsg, "AssignedPublicPort", json_object_new_int(ntohs(ret->ext_port)));
++	//json_object_object_add(sendmsg, "Protocol", json_object_new_string());
++	json_object_object_add(sendmsg, "Nonce1", json_object_new_int(ret->nonce.n[0]));
++	json_object_object_add(sendmsg, "Nonce2", json_object_new_int(ret->nonce.n[1]));
++	json_object_object_add(sendmsg, "Nonce3", json_object_new_int(ret->nonce.n[2]));
++	json_object_object_add(sendmsg, "RecvLifetimeEnd", json_object_new_string(ret->recv_lifetime_end == 0 ? " -\n" :
++                        ctime_r(&ret->recv_lifetime_end, timebuf)));
++	json_object_object_add(sendmsg, "LifetimeRenewS", json_object_new_string(ret->lifetime_renew_s == 0 ? " -\n" :
++                        ctime_r(&ret->lifetime_renew_s, timebuf)));
++	json_object_object_add(sendmsg, "ResultCode", json_object_new_int(ret->pcp_result_code));
++	
++	char *payload = (char *)json_object_to_json_string(sendmsg);
++		
++	buf_size = sizeof(zcfgMsg_t) + strlen(payload) + 1;
++	sendBuf = malloc(buf_size);
++	sendMsgHdr = (zcfgMsg_t*)sendBuf;
++	sendMsgHdr->type = ZCFG_MSG_PCP_RULE_UPDATE;
++	sendMsgHdr->length = strlen(payload) + 1;
++	sendMsgHdr->srcEid = ZCFG_EID_PCP;
++	sendMsgHdr->dstEid = ZCFG_EID_ESMD;
++	memcpy(sendMsgHdr->objIid, &pcpIid, sizeof(objIndex_t));
++	memcpy(sendBuf+sizeof(zcfgMsg_t), payload, strlen(payload)+1);
++	if((send_ret = zcfgMsgSendAndGetReply(sendMsgHdr, NULL, 0)) != ZCFG_SUCCESS_AND_NO_REPLY) {
++		printf("pcpMsgSend: sending ZCFG_MSG_PCP_SEND_EVENT to ESMD with fail ret=%d\n", send_ret);
++	}
++	return;
++}	
++void pcpEidInit()
++{
++	zcfgEidInit(ZCFG_EID_PCP, "PCPCLI");	
++}
+Index: pcp-master/pcp_app/Makefile.am
+===================================================================
+--- pcp-master.orig/pcp_app/Makefile.am	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/pcp_app/Makefile.am	2020-03-27 16:35:06.245772451 +0800
+@@ -1,10 +1,12 @@
+ AM_CPPFLAGS = $(PCP_CPPFLAGS)
+ AM_CFLAGS = $(PCP_CFLAGS)
+ 
++
+ bin_PROGRAMS = pcp
+ 
+ pcp_SOURCES = pcp_app.c
+ pcp_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/libpcp/include -I$(top_srcdir)/libpcp/src/net -I$(top_srcdir)/libpcp/src
++
+ pcp_LDADD = $(top_builddir)/libpcp/libpcp-client.la
+ pcp_LDFLAGS = -static
+ 
+Index: pcp-master/Makefile.am
+===================================================================
+--- pcp-master.orig/Makefile.am	2014-09-30 21:55:08.000000000 +0800
++++ pcp-master/Makefile.am	2020-03-27 16:35:06.245772451 +0800
+@@ -7,9 +7,9 @@
+   SERVER_DIR = pcp_server
+ endif
+ 
+-PCP_CPPFLAGS = -I$(top_srcdir)/libpcp/include -I$(top_srcdir)/libpcp/src/net -I$(top_srcdir)/libpcp/src
++PCP_CPPFLAGS = -I$(top_srcdir)/libpcp/include -I$(top_srcdir)/libpcp/src/net -I$(top_srcdir)/libpcp/src $(CPPFLAGS)
+ PCP_CFLAGS = -Wall -Werror
+-GCOVLIB =
++GCOVLIB = $(LIBS)
+ 
+ if GCOV
+ PCP_CFLAGS +=  -ggdb3 -O0 --coverage --no-inline

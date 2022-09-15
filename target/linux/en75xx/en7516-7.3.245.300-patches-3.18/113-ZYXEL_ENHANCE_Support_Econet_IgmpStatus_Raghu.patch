@@ -1,0 +1,112 @@
+Index: linux-3.18.21/net/bridge/ecnt_br.h
+===================================================================
+--- linux-3.18.21.orig/net/bridge/ecnt_br.h	2021-03-11 16:55:57.179113804 +0800
++++ linux-3.18.21/net/bridge/ecnt_br.h	2021-03-16 16:13:24.201622023 +0800
+@@ -479,14 +479,35 @@
+ {
+ #ifdef TCSUPPORT_IGMPSNOOPING_ENHANCE
+ 	if(pg->version == 4){
+-		DEBUGP_SNOOP("mc_fdb_delete delete dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n",	
++		DEBUGP_SNOOP("mc_fdb_delete delete dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n",
+ 		pg->port->dev->name, NIPQUAD(pg->addr.u.ip4),NIPQUAD(pg->src_entry.src.s_addr));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++		printk("Snoop_Table: delete dev=%s group=" NIPQUAD_FMT " hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x \n",	
++		pg->port->dev->name, 
++		NIPQUAD(pg->addr.u.ip4),
++		pg->port->macAddr.addr[0],
++		pg->port->macAddr.addr[1],		
++		pg->port->macAddr.addr[2],
++		pg->port->macAddr.addr[3],
++		pg->port->macAddr.addr[4],
++		pg->port->macAddr.addr[5]);
++#endif
+ 	}
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	else if(pg->version == 6)
+ 	{
+ 		DEBUGP_SNOOP("mc_fdb_delete deleteV6 dev=%s group=[%s] src ip=[%s]\n",	
+ 		pg->port->dev->name, ip6_sprintf(&pg->addr.u.ip6),ip6_sprintf(&pg->src_entry.src6));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++		printk("Snoop_Table: deleteV6 dev=%s group=[%s] hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",	
++		pg->port->dev->name, ip6_sprintf(&pg->addr.u.ip6),
++		pg->port->macAddr.addr[0],
++		pg->port->macAddr.addr[1],		
++		pg->port->macAddr.addr[2],
++		pg->port->macAddr.addr[3],
++		pg->port->macAddr.addr[4],
++		pg->port->macAddr.addr[5]);
++#endif
+ 	}	
+ #endif
+ #endif
+@@ -502,13 +523,33 @@
+ {
+ #ifdef TCSUPPORT_IGMPSNOOPING_ENHANCE
+ 	if(port->version == 4){
+-		DEBUGP_SNOOP("br_multicast_add_group new portgroup dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n", 
++		DEBUGP_SNOOP("br_multicast_add_group new portgroup dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n",
+ 			port->dev->name, NIPQUAD(group->u.ip4),NIPQUAD(port->src_entry.src.s_addr));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++		printk("Snoop_Table: new portgroup dev=%s group=" NIPQUAD_FMT " hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", 
++			port->dev->name, NIPQUAD(group->u.ip4),
++			port->macAddr.addr[0],
++			port->macAddr.addr[1],		
++			port->macAddr.addr[2],
++			port->macAddr.addr[3],
++			port->macAddr.addr[4],
++			port->macAddr.addr[5]);
++#endif
+ 	}
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	else{
+ 		DEBUGP_SNOOP("br_multicast_add_group newV6 portgroup dev=%s group=[%s] src ip=[%s]\n", 
+ 			port->dev->name, ip6_sprintf(&group->u.ip6), ip6_sprintf(&port->src_entry.src6));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++		printk("Snoop_Table: newV6 portgroup dev=%s group=[%s] hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", 
++			port->dev->name, ip6_sprintf(&group->u.ip6), 
++			port->macAddr.addr[0],
++			port->macAddr.addr[1],		
++			port->macAddr.addr[2],
++			port->macAddr.addr[3],
++			port->macAddr.addr[4],
++			port->macAddr.addr[5]);
++#endif
+ 	}
+ #endif
+ 	memcpy(&p->src_entry, &port->src_entry, sizeof(port->src_entry)); 
+@@ -529,13 +570,33 @@
+ #ifdef TCSUPPORT_IGMPSNOOPING_ENHANCE	
+ 		if(br_multicast_equal_port_group(p, port, group)){
+ 			if(port->version == 4){
+-				DEBUGP_SNOOP("br_multicast_add_group update portgroup dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n", 
++				DEBUGP_SNOOP("br_multicast_add_group update portgroup dev=%s group=" NIPQUAD_FMT " src ip=" NIPQUAD_FMT "\n",
+ 					port->dev->name, NIPQUAD(group->u.ip4),NIPQUAD(port->src_entry.src.s_addr));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++				printk("Snoop_Table: update portgroup dev=%s group=" NIPQUAD_FMT " hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", 
++					port->dev->name,NIPQUAD(group->u.ip4), 
++							port->macAddr.addr[0],
++							port->macAddr.addr[1],		
++							port->macAddr.addr[2],
++							port->macAddr.addr[3],
++							port->macAddr.addr[4],
++							port->macAddr.addr[5]);
++#endif
+ 			}
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 			else{
+ 				DEBUGP_SNOOP("br_multicast_add_group updateV6 portgroup dev=%s group=[%s] src ip=[%s]\n", 
+-					port->dev->name, ip6_sprintf(&group->u.ip6),ip6_sprintf(&port->src_entry.src6));	
++					port->dev->name, ip6_sprintf(&group->u.ip6),ip6_sprintf(&port->src_entry.src6));
++#ifdef ZYXEL_IGMP_SNOOPING_STATUS
++				printk("Snoop_Table: updateV6 portgroup dev=%s group=[%s] hostMac:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", 
++					port->dev->name, ip6_sprintf(&group->u.ip6), 
++							port->macAddr.addr[0],
++							port->macAddr.addr[1],		
++							port->macAddr.addr[2],
++							port->macAddr.addr[3],
++							port->macAddr.addr[4],
++							port->macAddr.addr[5]);
++#endif							
+ 			}
+ #endif
+ 			memcpy(&p->src_entry, &port->src_entry, sizeof(port->src_entry));

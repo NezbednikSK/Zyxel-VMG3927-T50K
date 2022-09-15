@@ -1,0 +1,119 @@
+Index: libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/broadband/zcfg_fe_dal_broadband.c	2020-01-27 15:35:47.319927531 +0800
++++ libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c	2020-01-30 17:44:20.271916403 +0800
+@@ -98,11 +98,11 @@
+ 	{"GatewayIPAddress",	dalType_v4Addr,	0,	0,	NULL},
+ 	{"ip6Static",			dalType_boolean,	0,	0,	NULL},
+ 	{"IP6Address",			dalType_v6AddrPrefix,	0,	0,	NULL},
++	{"IP6Unnumbered",		dalType_boolean,	0,	0,	NULL},
+ 	{"NextHop",				dalType_v6Addr,	0,	0,	NULL},
+      /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+ 	{"IPv6Manual_IANA",		dalType_boolean,	0,	0,	NULL},
+ 	{"IPv6Manual_IAPD",		dalType_boolean,	0,	0,	NULL},
+-	{"DHCPv6_Reqest_IANA",		dalType_boolean,	0,	0,	NULL},
+ 	//DHCP
+ 	{"option42Enable",		dalType_boolean,	0,	0,	NULL},
+ 	{"option43Enable",		dalType_boolean,	0,	0,	NULL},
+@@ -141,7 +141,7 @@
+ #ifdef ZYXEL_WAN_MAC
+ const char *WanMacType, *WanMacAddr, *WanMacIP;
+ #endif
+-bool ipStatic, ip6Static, Enable_6RD, ip6DnsStatic, IPv6Manual_IANA, IPv6Manual_IAPD, DHCPv6_Reqest_IANA;
++bool ipStatic, ip6Static, Enable_6RD, ip6DnsStatic, IPv6Manual_IANA, IPv6Manual_IAPD, IP6Unnumbered;
+ 
+ char CurrType[16] = {0};
+ char CurrMode[16] = {0};
+@@ -2615,18 +2615,18 @@
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_Enable_DSLite", Jobj, "DSLiteEnable");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLite_Type", Jobj, "DSLiteType");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLiteRelayIPv6Addresses", Jobj, "DSLiteRelayIPv6Addresses");
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered");    
+          /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+ 	        replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+-	        replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD");
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA");     
++	        replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD"); 
+ 	}
+ 	else if(!strcmp(ipMode, "DualStack")){
+ 		json_object_object_add(ipIfaceObj, "IPv4Enable", json_object_new_boolean(true));
+ 		json_object_object_add(ipIfaceObj, "IPv6Enable", json_object_new_boolean(true));
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered"); 
+         /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD");
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA");  
+ 	}
+ #ifdef ABUE_CUSTOMIZATION
+ 	else if(!strcmp(ipMode, "AutoConfig")){
+@@ -2635,10 +2635,10 @@
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_Enable_DSLite", Jobj, "DSLiteEnable");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLite_Type", Jobj, "DSLiteType");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLiteRelayIPv6Addresses", Jobj, "DSLiteRelayIPv6Addresses");
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered");
+ 		/* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD	*/
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD");
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA");
+ 	}
+ #endif	
+ 
+@@ -2740,10 +2740,10 @@
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLite_Type", Jobj, "DSLiteType");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLiteRelayIPv6Addresses", Jobj, "DSLiteRelayIPv6Addresses");
+ 		json_object_object_add(ipIfaceObj, "X_ZYXEL_Enable_6RD", json_object_new_boolean(false));
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered");
+         /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD");
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA"); 
+ 
+ 	}
+ 	else if(!strcmp(ipMode, "DualStack")){
+@@ -2751,10 +2751,10 @@
+ 		json_object_object_add(ipIfaceObj, "IPv6Enable", json_object_new_boolean(true));
+ 		json_object_object_add(ipIfaceObj, "X_ZYXEL_Enable_6RD", json_object_new_boolean(false));
+ 		json_object_object_add(ipIfaceObj, "X_ZYXEL_Enable_DSLite", json_object_new_boolean(false));
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered");
+         /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+         replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD"); 
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA");  
+ 	}
+ #ifdef ABUE_CUSTOMIZATION	
+ 	else if(!strcmp(ipMode, "AutoConfig")){
+@@ -2764,10 +2764,10 @@
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_Enable_DSLite", Jobj, "DSLiteEnable");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLite_Type", Jobj, "DSLiteType");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_DSLiteRelayIPv6Addresses", Jobj, "DSLiteRelayIPv6Addresses");
++		replaceParam(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model", Jobj, "IP6Unnumbered");
+ 		/* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD	*/
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual", Jobj, "IPv6Manual_IANA");
+ 		replaceParam(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual", Jobj, "IPv6Manual_IAPD");
+-		replaceParam(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA", Jobj, "DHCPv6_Reqest_IANA"); 
+ 	}
+ #endif
+ 	if(!strcmp(Encapsulation, "PPPoE") || !strcmp(Encapsulation, "PPPoA")){
+@@ -3263,7 +3263,7 @@
+     /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+     IPv6Manual_IANA = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Manual_IANA"));
+     IPv6Manual_IAPD = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Manual_IAPD"));
+-	DHCPv6_Reqest_IANA = json_object_get_boolean(json_object_object_get(ipIfaceObj, "DHCPv6_Reqest_IANA"));
++	IP6Unnumbered = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model"));
+ #ifdef ABUE_CUSTOMIZATION
+ 	Enable_DSLite = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_Enable_DSLite"));
+ #endif
+@@ -4177,11 +4177,11 @@
+ 		json_object_object_add(pramJobj, "VLANPriority", json_object_new_int(-1));
+ 	}
+ 
++	json_object_object_add(pramJobj, "IP6Unnumbered", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model")));
+     /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+ 	json_object_object_add(pramJobj, "IPv6Manual_IANA", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_AdvManagedFlag_Manual")));
+ 	json_object_object_add(pramJobj, "IPv6Manual_IAPD", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_AdvOtherConfigFlag_Manual")));
+-	json_object_object_add(pramJobj, "DHCPv6_Reqest_IANA", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_Request_DHCPv6_IA_NA")));
+-
++	
+ 	if(!strcmp(CurrType, "ATM")){
+ 		json_object_object_add(pramJobj, "vpivci", JSON_OBJ_COPY(json_object_object_get(atmLinkObj, "DestinationAddress")));
+ 		json_object_object_add(pramJobj, "AtmEncapsulation", JSON_OBJ_COPY(json_object_object_get(atmLinkObj, "Encapsulation")));

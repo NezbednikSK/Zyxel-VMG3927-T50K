@@ -1,0 +1,34 @@
+Index: libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/broadband/zcfg_fe_dal_broadband.c	2019-12-30 18:34:00.648545795 +0800
++++ libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c	2019-12-30 18:41:11.333660989 +0800
+@@ -52,6 +52,9 @@
+ 	{"pppPassword",			dalType_string,	1,	64,	NULL},
+ 	{"ConnectionTrigger",	dalType_string,	0,	0,	NULL, "AlwaysOn|OnDemand"},
+ 	{"IdleDisconnectTime",	dalType_int,	0,	0,	NULL},
++#ifdef ABUE_CUSTOMIZATION	
++	{"pppServicename",		dalType_string,	0,	0,	NULL},
++#endif	
+ 	{"pppoePassThrough",	dalType_boolean,	0,	0,	NULL},
+ 	//Nat
+ 	{"NatEnable",			dalType_boolean,	0,	0,	NULL},
+@@ -2478,6 +2481,9 @@
+ 	replaceParam(pppIfaceObj, "Username", Jobj, "pppUsername");
+ 	replaceParam(pppIfaceObj, "Password", Jobj, "pppPassword");
+ 	replaceParam(pppIfaceObj, "MaxMRUSize", Jobj, "MaxMTUSize");
++#ifdef ABUE_CUSTOMIZATION	
++	replaceParam(pppIfaceObj, "X_ZYXEL_ServiceName", Jobj, "pppServicename");
++#endif
+ 	replaceParam(pppIfaceObj, "ConnectionTrigger", Jobj, "ConnectionTrigger");
+ 	idleDisconnectTime = json_object_get_int(json_object_object_get(Jobj, "IdleDisconnectTime"));
+ 	if(json_object_object_get(Jobj, "IdleDisconnectTime")){
+@@ -4193,6 +4199,9 @@
+ 		json_object_object_add(pramJobj, "pppUsername", JSON_OBJ_COPY(json_object_object_get(pppIfaceObj, "Username")));
+ 		json_object_object_add(pramJobj, "pppPassword", JSON_OBJ_COPY(json_object_object_get(pppIfaceObj, "Password")));
+ 		json_object_object_add(pramJobj, "ConnectionTrigger", JSON_OBJ_COPY(json_object_object_get(pppIfaceObj, "ConnectionTrigger")));
++#ifdef ABUE_CUSTOMIZATION		
++		json_object_object_add(pramJobj, "pppServicename", JSON_OBJ_COPY(json_object_object_get(pppIfaceObj, "X_ZYXEL_ServiceName")));
++#endif
+ 	}
+ #ifdef ABUE_CUSTOMIZATION
+ 		Enable_DSLite = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_Enable_DSLite"));

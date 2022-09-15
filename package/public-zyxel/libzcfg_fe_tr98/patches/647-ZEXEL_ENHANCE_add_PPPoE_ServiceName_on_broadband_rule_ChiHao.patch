@@ -1,0 +1,34 @@
+Index: libzcfg_fe_tr98-1.0/wanDev.c
+===================================================================
+--- libzcfg_fe_tr98-1.0.orig/wanDev.c	2019-12-30 18:46:28.032524234 +0800
++++ libzcfg_fe_tr98-1.0/wanDev.c	2019-12-30 18:50:21.982195443 +0800
+@@ -5800,7 +5800,7 @@
+ 			paramValue = json_object_object_get(pppoeJobj, "ACName");
+ 		}
+ 		else if(!strcmp(paramList->name, "PPPoEServiceName")) {
+-			paramValue = json_object_object_get(pppoeJobj, "ServiceName");
++			paramValue = json_object_object_get(pppConnJobj, "X_ZYXEL_ServiceName");
+ 		}
+ 		else if(!strcmp(paramList->name, "PPPLCPEcho")) {
+ 			paramValue = json_object_object_get(pppConnJobj, "LCPEcho");
+@@ -6496,6 +6496,11 @@
+ 				paramList++;
+ 				continue;
+ 			}
++			else if(!strcmp(paramList->name, "PPPoEServiceName")) {
++				json_object_object_add(pppIfaceJobj, "X_ZYXEL_ServiceName", JSON_OBJ_COPY(paramValue));
++				paramList++;
++				continue;
++			}
+ 			else if(!strcmp(paramList->name, "X_ZYXEL_IPv4Enable")) {
+ 				json_object_object_add(ipIfaceJobj, "IPv4Enable", JSON_OBJ_COPY(paramValue));
+ 				paramList++;
+@@ -7451,7 +7456,7 @@
+ 			attrValue = zcfgFeParamAttrGetByName(RDM_OID_PPP_IFACE_PPPOE, "ACName");
+ 		}
+ 		else if(!strcmp(paramList->name, "PPPoEServiceName")){
+-			attrValue = zcfgFeParamAttrGetByName(RDM_OID_PPP_IFACE_PPPOE, "ServiceName");
++			attrValue = zcfgFeParamAttrGetByName(RDM_OID_PPP_IFACE, "X_ZYXEL_ServiceName");
+ 		}	
+ 		else if(!strcmp(paramList->name, "X_ZYXEL_IPv6Enable")){
+ 			attrValue = zcfgFeParamAttrGetByName(RDM_OID_IP_IFACE, "IPv6Enable");

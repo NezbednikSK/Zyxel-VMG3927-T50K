@@ -1,0 +1,32 @@
+#!/bin/sh
+
+BASE_DIR="/misc/avast"
+
+start_components() {
+	for script in ${BASE_DIR}/etc/rc3.d/S*; do
+		$script start
+	done
+}
+
+stop_components() {
+	for script in ${BASE_DIR}/etc/rc3.d/K*; do
+		$script stop
+	done
+}
+
+case "$1" in
+	start)
+		start_components
+		exit 0
+		;;
+
+	stop)
+		stop_components
+		exit 0
+		;;
+
+	*)
+		echo "$0: unrecognized option $1"
+		;;
+
+esac

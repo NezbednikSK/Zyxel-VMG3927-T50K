@@ -1,0 +1,13 @@
+Index: igmpproxy-0.3/src/syslog.c
+===================================================================
+--- igmpproxy-0.3.orig/src/syslog.c	2021-01-05 01:44:01.000000000 +0800
++++ igmpproxy-0.3/src/syslog.c	2021-06-07 18:40:19.336615329 +0800
+@@ -34,7 +34,7 @@
+ 
+ #include "igmpproxy.h"
+ 
+-int LogLevel = LOG_WARNING;
++int LogLevel = LOG_DEBUG;//LOG_WARNING;
+ bool Log2Stderr = false;
+ 
+ void my_log( int Severity, int Errno, const char *FmtSt, ... )

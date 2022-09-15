@@ -1,0 +1,76 @@
+Index: linux-3.18.21/include/net/addrconf.h
+===================================================================
+--- linux-3.18.21.orig/include/net/addrconf.h	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/include/net/addrconf.h	2019-11-20 15:06:24.819995438 +0800
+@@ -1,7 +1,12 @@
+ #ifndef _ADDRCONF_H
+ #define _ADDRCONF_H
+ 
++#if 1 //for Orange ACT_0005
++#define MAX_RTR_SOLICITATIONS		5
++#else
+ #define MAX_RTR_SOLICITATIONS		3
++#endif
++
+ #define RTR_SOLICITATION_INTERVAL	(4*HZ)
+ 
+ #define MIN_VALID_LIFETIME		(2*3600)	/* 2 hours */
+Index: linux-3.18.21/net/ipv6/addrconf.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv6/addrconf.c	2019-11-20 15:06:24.443995423 +0800
++++ linux-3.18.21/net/ipv6/addrconf.c	2019-11-20 15:07:35.703749095 +0800
+@@ -103,6 +103,14 @@
+ 
+ #define	INFINITY_LIFE_TIME	0xFFFFFFFF
+ 
++
++#if 1 //for Orange ACT_0005
++void (*kerSysSendtoMonitorTask_hook)(int msgType, char *msgData, int msgDataLen);
++EXPORT_SYMBOL(kerSysSendtoMonitorTask_hook);
++#define MSG_NETLINK_IPV6_RESTART_PPPD 0X0200
++#endif
++
++
+ static inline u32 cstamp_delta(unsigned long cstamp)
+ {
+ 	return (cstamp - INITIAL_JIFFIES) * 100UL / HZ;
+@@ -3176,10 +3184,21 @@
+ 				      idev->cnf.rtr_solicit_delay :
+ 				      idev->cnf.rtr_solicit_interval);
+ 	} else {
++#if 1 //for Orange ACT_0005, RESTART PPPOE HERE
++        if(strstr(idev->dev->name, "ppp")){
++			char cmd[64];
++			snprintf(cmd, sizeof(cmd), "%s|RESTARTPPPOE", idev->dev->name);
++			if(kerSysSendtoMonitorTask_hook){
++				kerSysSendtoMonitorTask_hook(MSG_NETLINK_IPV6_RESTART_PPPD, cmd, strlen(cmd)+1);			
++			}
++		}
++
++#endif
+ 		/*
+ 		 * Note: we do not support deprecated "all on-link"
+ 		 * assumption any longer.
+ 		 */
++
+ 		pr_debug("%s: no IPv6 routers present\n", idev->dev->name);
+ 	}
+ 
+@@ -5415,7 +5434,7 @@
+ {
+ 	struct inet6_dev *idev;
+ 	int i, err;
+-
++	
+ 	err = ipv6_addr_label_init();
+ 	if (err < 0) {
+ 		pr_crit("%s: cannot initialize default policy table: %d\n",
+@@ -5505,7 +5524,7 @@
+ {
+ 	struct net_device *dev;
+ 	int i;
+-
++	
+ 	unregister_netdevice_notifier(&ipv6_dev_notf);
+ 	unregister_pernet_subsys(&addrconf_ops);
+ 	ipv6_addr_label_cleanup();

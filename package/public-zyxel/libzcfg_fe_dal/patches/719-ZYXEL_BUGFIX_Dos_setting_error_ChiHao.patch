@@ -1,0 +1,47 @@
+Index: libzcfg_fe_dal-1.0/security/firewall/zcfg_fe_dal_firewall_generic.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/security/firewall/zcfg_fe_dal_firewall_generic.c	2019-12-17 10:09:48.529064486 +0800
++++ libzcfg_fe_dal-1.0/security/firewall/zcfg_fe_dal_firewall_generic.c	2019-12-17 10:14:04.214302826 +0800
+@@ -239,25 +239,25 @@
+ 
+ 		json_object_object_add(levelObj, "X_ZYXEL_DefaultConfig", json_object_new_string(level));
+ 		ret = zcfgFeObjJsonSet(RDM_OID_FIREWALL_LEVEL, &levelIid, levelObj, NULL);
+-	}
+-#ifdef ABUE_CUSTOMIZATION 
+-	if(!strcmp(level, "Custom"))
+-		enable = true;
+-	else
+-		enable = false;
+-
+-	IID_INIT(FiremallACLIid);
+-	FiremallACLIid.level = 2;
+-	FiremallACLIid.idx[0] = 1;
+-
+-	while(zcfgFeObjJsonGetNext(RDM_OID_FIREWALL_CHAIN_RULE, &FiremallACLIid, &FiremallACLJobj) == ZCFG_SUCCESS){	
+-		if(json_object_object_get(FiremallACLJobj, "Enable")){
+-			json_object_object_add(FiremallACLJobj, "Enable", json_object_new_boolean(enable));		
+-			zcfgFeObjJsonSet(RDM_OID_FIREWALL_CHAIN_RULE, &FiremallACLIid, FiremallACLJobj, NULL);
++#ifdef ABUE_CUSTOMIZATION 	
++		if(!strcmp(level, "Custom"))
++			enable = true;
++		else
++			enable = false;
++	
++		IID_INIT(FiremallACLIid);
++		FiremallACLIid.level = 2;
++		FiremallACLIid.idx[0] = 1;
++	
++		while(zcfgFeObjJsonGetNext(RDM_OID_FIREWALL_CHAIN_RULE, &FiremallACLIid, &FiremallACLJobj) == ZCFG_SUCCESS){	
++			if(json_object_object_get(FiremallACLJobj, "Enable")){
++				json_object_object_add(FiremallACLJobj, "Enable", json_object_new_boolean(enable)); 	
++				zcfgFeObjJsonSet(RDM_OID_FIREWALL_CHAIN_RULE, &FiremallACLIid, FiremallACLJobj, NULL);
++			}	
+ 		}	
+-	}	
+-	zcfgFeJsonObjFree(FiremallACLJobj);	
++		zcfgFeJsonObjFree(FiremallACLJobj); 
+ #endif	
++	}	
+ 	zcfgFeJsonObjFree(levelObj);
+ 	return ret;
+ }

@@ -1,0 +1,46 @@
+Index: libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/broadband/zcfg_fe_dal_broadband.c	2019-12-12 10:47:35.739935691 +0800
++++ libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c	2019-12-12 14:06:39.629858486 +0800
+@@ -31,6 +31,8 @@
+ 	{"Encapsulation",		dalType_string,	4,	5,	NULL, "IPoE|IPoA|PPPoE|PPPoA"},
+ #ifdef ABUE_CUSTOMIZATION
+ 	{"ipMode",				dalType_string,	4,	10,	NULL, "IPv4|DualStack|IPv6|AutoConfig"},
++	{"pcpMode",				dalType_int,	0,	0,	NULL, NULL}, //PCP mode: 0(Disable), 1(DSLITE), 2(NAT444).
++	{"pcpServer",			dalType_string,	0,	0,	NULL},	
+ #else
+ 	{"ipMode",				dalType_string,	4,	9,	NULL, "IPv4|DualStack|IPv6"},
+ #endif
+@@ -2533,7 +2535,10 @@
+ 
+ 	//Name = json_object_get_string(json_object_object_get(Jobj, "Name"));
+ 	//Mode = json_object_get_string(json_object_object_get(Jobj, "Mode"));
+-
++#ifdef ABUE_CUSTOMIZATION
++	replaceParam(ipIfaceObj, "X_ZYXEL_PCPServer", Jobj, "pcpServer");
++	replaceParam(ipIfaceObj, "X_ZYXEL_PCPMode", Jobj, "pcpMode");
++#endif
+ 	//set defalult values
+ 	//json_object_object_add(ipIfaceObj, "Enable", json_object_new_boolean(true));//set to false here, trigger to true after WAN add comlete
+ 	replaceParam(ipIfaceObj, "Enable", Jobj, "Enable");
+@@ -2677,7 +2682,10 @@
+ 		json_object_object_add(ipIfaceObj, "LowerLayers", json_object_new_string(currLowerLayers));
+ 		return ret;
+ 	}
+-
++#ifdef ABUE_CUSTOMIZATION
++	replaceParam(ipIfaceObj, "X_ZYXEL_PCPServer", Jobj, "pcpServer");
++	replaceParam(ipIfaceObj, "X_ZYXEL_PCPMode", Jobj, "pcpMode");
++#endif
+ 	replaceParam(ipIfaceObj, "X_ZYXEL_ConcurrentWan", Jobj, "ConcurrentWan");
+ 	
+ 	dbg_printf("line:%d\n", __LINE__);
+@@ -4122,6 +4130,8 @@
+ 	//Basic param
+ 	json_object_object_add(pramJobj, "Name", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_SrvName")));
+ 	json_object_object_add(pramJobj, "Enable", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "Enable")));
++	json_object_object_add(pramJobj, "pcpMode", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_PCPMode")));
++	json_object_object_add(pramJobj, "pcpServer", JSON_OBJ_COPY(json_object_object_get(ipIfaceObj, "X_ZYXEL_PCPServer")));	
+ 	json_object_object_add(pramJobj, "Type", json_object_new_string(CurrType));
+ 	json_object_object_add(pramJobj, "Mode", json_object_new_string(CurrMode));
+ 	json_object_object_add(pramJobj, "VLANID", JSON_OBJ_COPY(json_object_object_get(vlanTermObj, "VLANID")));

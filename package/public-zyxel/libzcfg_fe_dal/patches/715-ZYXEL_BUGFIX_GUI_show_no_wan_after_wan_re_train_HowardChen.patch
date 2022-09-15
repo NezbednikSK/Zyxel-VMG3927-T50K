@@ -1,0 +1,24 @@
+Index: libzcfg_fe_dal-1.0/js/zcfg_fe_dal_networkmap.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/js/zcfg_fe_dal_networkmap.c	2019-11-25 17:08:50.200758078 +0800
++++ libzcfg_fe_dal-1.0/js/zcfg_fe_dal_networkmap.c	2019-11-25 17:51:59.168829412 +0800
+@@ -1652,10 +1652,7 @@
+ #endif /* OI_CUSTOMIZATION */
+ 			{
+ 				IID_INIT(v6AddrIid);
+-				v6AddrIid.level = 2;
+-				v6AddrIid.idx[0] = ipIfaceIid.idx[0];
+-				v6AddrIid.idx[1] = 1;
+-				if(zcfgFeObjJsonGet(RDM_OID_IP_IFACE_V6_ADDR, &v6AddrIid, &v6AddrObj) == ZCFG_SUCCESS){
++				while(zcfgFeSubInObjJsonGetNext(RDM_OID_IP_IFACE_V6_ADDR, &ipIfaceIid, &v6AddrIid, &v6AddrObj)== ZCFG_SUCCESS){
+ 					IPAddress = json_object_get_string(json_object_object_get(v6AddrObj,"IPAddress"));
+ 					Status = json_object_get_string(json_object_object_get(v6AddrObj, "Status"));
+ 					if(Status == NULL){
+@@ -1672,6 +1669,7 @@
+ 						}
+ 						zcfgFeJsonObjFree(v6AddrObj);
+ 						zcfgFeJsonObjFree(ipIfaceObj);
++						break;
+ 					}
+ 					zcfgFeJsonObjFree(v6AddrObj);
+ 				}

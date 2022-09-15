@@ -1,0 +1,132 @@
+Index: linux-3.18.21/include/linux/netdevice.h
+===================================================================
+--- linux-3.18.21.orig/include/linux/netdevice.h	2021-01-22 15:14:48.643823127 +0800
++++ linux-3.18.21/include/linux/netdevice.h	2021-01-22 18:38:40.811726792 +0800
+@@ -1904,8 +1904,8 @@
+ 	/* Used in ipv6_gro_receive() and foo-over-udp */
+ 	u16	proto;
+ 
+-	/* Used in udp_gro_receive */
+-	u8	udp_mark:1;
++	/* Used in tunnel GRO receive */
++	u8	encap_mark:1;
+ 
+ 	/* GRO checksum is valid */
+ 	u8	csum_valid:1;
+Index: linux-3.18.21/net/core/dev.c
+===================================================================
+--- linux-3.18.21.orig/net/core/dev.c	2021-01-22 15:14:49.127823123 +0800
++++ linux-3.18.21/net/core/dev.c	2021-01-22 18:39:20.123726482 +0800
+@@ -4109,7 +4109,7 @@
+ 		NAPI_GRO_CB(skb)->same_flow = 0;
+ 		NAPI_GRO_CB(skb)->flush = 0;
+ 		NAPI_GRO_CB(skb)->free = 0;
+-		NAPI_GRO_CB(skb)->udp_mark = 0;
++		NAPI_GRO_CB(skb)->encap_mark = 0;
+ 
+ 		/* Setup for GRO checksum validation */
+ 		switch (skb->ip_summed) {
+Index: linux-3.18.21/net/ipv4/af_inet.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv4/af_inet.c	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/net/ipv4/af_inet.c	2021-01-22 18:41:33.231725434 +0800
+@@ -1388,6 +1388,19 @@
+ 	return pp;
+ }
+ 
++static struct sk_buff **ipip_gro_receive(struct sk_buff **head,
++					 struct sk_buff *skb)
++{
++	if (NAPI_GRO_CB(skb)->encap_mark) {
++		NAPI_GRO_CB(skb)->flush = 1;
++		return NULL;
++	}
++
++	NAPI_GRO_CB(skb)->encap_mark = 1;
++
++	return inet_gro_receive(head, skb);
++}
++
+ int inet_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
+ {
+ 	if (sk->sk_family == AF_INET)
+@@ -1638,7 +1651,7 @@
+ 	.type = cpu_to_be16(ETH_P_IP),
+ 	.callbacks = {
+ 		.gso_segment = inet_gso_segment,
+-		.gro_receive = inet_gro_receive,
++		.gro_receive = ipip_gro_receive,
+ 		.gro_complete = inet_gro_complete,
+ 	},
+ };
+Index: linux-3.18.21/net/ipv4/gre_offload.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv4/gre_offload.c	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/net/ipv4/gre_offload.c	2021-01-22 18:42:08.359725157 +0800
+@@ -127,6 +127,11 @@
+ 	struct packet_offload *ptype;
+ 	__be16 type;
+ 
++	if (NAPI_GRO_CB(skb)->encap_mark)
++		goto out;
++
++	NAPI_GRO_CB(skb)->encap_mark = 1;
++
+ 	off = skb_gro_offset(skb);
+ 	hlen = off + sizeof(*greh);
+ 	greh = skb_gro_header_fast(skb, off);
+Index: linux-3.18.21/net/ipv4/udp_offload.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv4/udp_offload.c	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/net/ipv4/udp_offload.c	2021-01-22 18:43:31.279724504 +0800
+@@ -266,14 +266,14 @@
+ 	unsigned int off = skb_gro_offset(skb);
+ 	int flush = 1;
+ 
+-	if (NAPI_GRO_CB(skb)->udp_mark ||
++	if (NAPI_GRO_CB(skb)->encap_mark ||
+ 	    (skb->ip_summed != CHECKSUM_PARTIAL &&
+ 	     NAPI_GRO_CB(skb)->csum_cnt == 0 &&
+ 	     !NAPI_GRO_CB(skb)->csum_valid))
+ 		goto out;
+ 
+-	/* mark that this skb passed once through the udp gro layer */
+-	NAPI_GRO_CB(skb)->udp_mark = 1;
++	/* mark that this skb passed once through the tunnel gro layer */
++	NAPI_GRO_CB(skb)->encap_mark = 1;
+ 
+ 	rcu_read_lock();
+ 	uo_priv = rcu_dereference(udp_offload_base);
+Index: linux-3.18.21/net/ipv6/ip6_offload.c
+===================================================================
+--- linux-3.18.21.orig/net/ipv6/ip6_offload.c	2015-09-01 06:19:23.000000000 +0800
++++ linux-3.18.21/net/ipv6/ip6_offload.c	2021-01-22 18:44:57.983723821 +0800
+@@ -258,6 +258,19 @@
+ 	return pp;
+ }
+ 
++static struct sk_buff **sit_gro_receive(struct sk_buff **head,
++					struct sk_buff *skb)
++{
++	if (NAPI_GRO_CB(skb)->encap_mark) {
++		NAPI_GRO_CB(skb)->flush = 1;
++		return NULL;
++	}
++
++	NAPI_GRO_CB(skb)->encap_mark = 1;
++
++	return ipv6_gro_receive(head, skb);
++}
++
+ static int ipv6_gro_complete(struct sk_buff *skb, int nhoff)
+ {
+ 	const struct net_offload *ops;
+@@ -284,7 +297,7 @@
+ 	.type = cpu_to_be16(ETH_P_IPV6),
+ 	.callbacks = {
+ 		.gso_segment = ipv6_gso_segment,
+-		.gro_receive = ipv6_gro_receive,
++		.gro_receive = sit_gro_receive,
+ 		.gro_complete = ipv6_gro_complete,
+ 	},
+ };

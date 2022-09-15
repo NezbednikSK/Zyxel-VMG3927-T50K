@@ -1,0 +1,130 @@
+Index: libzcfg_fe_dal-1.0/js/zcfg_fe_dal_networkmap.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/js/zcfg_fe_dal_networkmap.c	2019-12-12 13:32:27.684869966 +0800
++++ libzcfg_fe_dal-1.0/js/zcfg_fe_dal_networkmap.c	2019-12-12 17:50:44.421296945 +0800
+@@ -1554,16 +1554,16 @@
+ */
+ zcfgRet_t zcfgFeDalNetworkMAPGet(struct json_object *Jobj, struct json_object *Jarray, char *replyMsg)
+ {
+-	struct json_object *ipIfaceObj;
++	struct json_object *ipIfaceObj = NULL;
+ 	struct json_object *v4AddrObj = NULL;
+ 	struct json_object *v6AddrObj = NULL;
+ 	struct json_object *networkMAPInfoJobj = NULL;
+-	struct json_object *hostsJarray;
+-	struct json_object *wanInfoJobj;
+-	struct json_object *stbJobj;
++	struct json_object *hostsJarray = NULL;
++	struct json_object *wanInfoJobj = NULL;
++	struct json_object *stbJobj = NULL;
+ 	const char *X_ZYXEL_IfName = NULL, *Status = NULL, *IPAddress = NULL, *addrStatus = NULL;
+ 	char wantype[9] = {0};
+-	bool X_ZYXEL_DefaultGatewayIface;
++	bool v4_DefGw = false, v6_DefGw = false,  ipIfaceUp = false;
+ 	int wanstatus = 0, wanIfaceExist = 0;
+ 	objIndex_t iid = {0};
+ 	objIndex_t ipIfaceIid = {0};
+@@ -1581,15 +1581,22 @@
+ 			continue;
+ 		}
+ 		wanIfaceExist = 1;
++
+ 		Status = json_object_get_string(json_object_object_get(ipIfaceObj, "Status"));
+ 		if(Status == NULL){
+ 			Status = "";
++		}else if(!strcmp(Status, "Up") || !strcmp(Status, "LowerLayerDown")){
++			ipIfaceUp = true;
+ 		}
+-		X_ZYXEL_DefaultGatewayIface = json_object_get_boolean(json_object_object_get(ipIfaceObj,"X_ZYXEL_DefaultGatewayIface"));
++
++		v4_DefGw = json_object_get_boolean(json_object_object_get(ipIfaceObj,"X_ZYXEL_DefaultGatewayIface"));
++		v6_DefGw = json_object_get_boolean(json_object_object_get(ipIfaceObj,"X_ZYXEL_v6DefaultGatewayIface"));
++
+ #if (!defined(INTERNET_LED_DEPEND_ON_DEFAULT_GW))
+-		X_ZYXEL_DefaultGatewayIface = true;
++		v4_DefGw = true;
++		v6_DefGw = true;
+ #endif
+-		if(X_ZYXEL_DefaultGatewayIface && (!strcmp(Status, "Up") || !strcmp(Status, "LowerLayerDown"))){
++		if(v4_DefGw && ipIfaceUp){
+ 			bool bIPv6Exist = false;
+ 			char sysCmd[128] = "\0";
+ 
+@@ -1615,12 +1622,9 @@
+ 						wantype[0] = '\0';
+ 						strcpy(wantype,"ipv4ipv6");
+ 					}
+-					zcfgFeJsonObjFree(v4AddrObj);
+-					zcfgFeJsonObjFree(ipIfaceObj);
+ 				}
+ 				zcfgFeJsonObjFree(v4AddrObj);
+ 			}
+-
+ #ifdef OI_CUSTOMIZATION
+ 			sprintf(sysCmd, "ifconfig | grep -A2 \"nas\\|ppp\" | grep \"inet6 addr\" | grep \"Scope:Global\" > /var/wan6ipcheck");
+ 			system(sysCmd);
+@@ -1646,40 +1650,41 @@
+ 					}
+ 
+ 					zcfgFeJsonObjFree(v6AddrObj);
++					break;
+ 				}
+ 			}
+-			else
+ #endif /* OI_CUSTOMIZATION */
+-			{
+-				IID_INIT(v6AddrIid);
+-				while(zcfgFeSubInObjJsonGetNext(RDM_OID_IP_IFACE_V6_ADDR, &ipIfaceIid, &v6AddrIid, &v6AddrObj)== ZCFG_SUCCESS){
+-					IPAddress = json_object_get_string(json_object_object_get(v6AddrObj,"IPAddress"));
+-					Status = json_object_get_string(json_object_object_get(v6AddrObj, "Status"));
+-					if(Status == NULL){
+-						Status = "";
++		}
++
++		if(v6_DefGw && ipIfaceUp){
++			IID_INIT(v6AddrIid);
++			while(zcfgFeSubInObjJsonGetNext(RDM_OID_IP_IFACE_V6_ADDR, &ipIfaceIid, &v6AddrIid, &v6AddrObj)== ZCFG_SUCCESS){
++				IPAddress = json_object_get_string(json_object_object_get(v6AddrObj,"IPAddress"));
++				Status = json_object_get_string(json_object_object_get(v6AddrObj, "Status"));
++				if(Status == NULL){
++					Status = "";
++				}
++
++				if(IPAddress != NULL && strcmp(IPAddress, "") && !strcmp(Status, "Enabled")){
++					wanstatus = 1;
++					if(strlen(wantype) == 0){
++						strcpy(wantype,"ipv6");
+ 					}
+-					if(IPAddress != NULL && strcmp(IPAddress, "") && !strcmp(Status, "Enabled")){
+-						wanstatus = 1;
+-						if(strlen(wantype) == 0){
+-							strcpy(wantype,"ipv6");
+-						}
+-						else if(!strcmp(wantype,"ipv4")){
+-							wantype[0] = '\0';
+-							strcpy(wantype,"ipv4ipv6");
+-						}
+-						zcfgFeJsonObjFree(v6AddrObj);
+-						zcfgFeJsonObjFree(ipIfaceObj);
+-						break;
++					else if(!strcmp(wantype,"ipv4")){
++						wantype[0] = '\0';
++						strcpy(wantype,"ipv4ipv6");
+ 					}
+ 					zcfgFeJsonObjFree(v6AddrObj);
++					break;
+ 				}
++				zcfgFeJsonObjFree(v6AddrObj);
+ 			}
+ 		}
+-		
+ 		zcfgFeJsonObjFree(ipIfaceObj);
+-	}
+-
+ 
++		if(wanstatus)
++			break;
++	}
+ 
+ 	networkMAPInfoJobj = json_object_new_object();
+ 	json_object_array_add(Jarray, networkMAPInfoJobj);

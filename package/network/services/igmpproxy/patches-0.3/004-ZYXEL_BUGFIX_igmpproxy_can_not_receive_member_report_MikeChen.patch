@@ -1,0 +1,34 @@
+Index: igmpproxy-0.3/src/ifvc.c
+===================================================================
+--- igmpproxy-0.3.orig/src/ifvc.c	2021-01-05 01:44:01.000000000 +0800
++++ igmpproxy-0.3/src/ifvc.c	2021-06-11 10:45:04.529226723 +0800
+@@ -173,7 +173,13 @@
+             k_join(Dp, allrouters_group);
+             IfDescEp++;
+         }
+-
++        if (strstr(Dp->Name, "br") && !(IfReq.ifr_flags & IFF_PROMISC)) {
++            IfReq.ifr_flags |= IFF_PROMISC;
++            if ( ioctl(Sock, SIOCSIFFLAGS, &IfReq) == -1) {
++                my_log( LOG_ERR, errno, "rebuildIfVc: ioctl SIOCSIFFLAGS set IFF_PROMISC for %s", Dp->Name );
++            }
++            else my_log( LOG_DEBUG, 0, "rebuildIfVc: ioctl SIOCSIFFLAGS set IFF_PROMISC for %s", Dp->Name );
++        }
+         // Debug log the result...
+         my_log( LOG_DEBUG, 0, "rebuildIfVc: Interface %s Addr: %s, Flags: 0x%04x, Network: %s",
+             Dp->Name,
+@@ -311,7 +317,13 @@
+             IfDescEp->robustness    = DEFAULT_ROBUSTNESS;
+             IfDescEp->threshold     = DEFAULT_THRESHOLD;   /* ttl limit */
+             IfDescEp->ratelimit     = DEFAULT_RATELIMIT;
+-
++            if (strstr(IfDescEp->Name, "br") && !(IfReq.ifr_flags & IFF_PROMISC)) {
++               IfReq.ifr_flags |= IFF_PROMISC;
++                if ( ioctl(Sock, SIOCSIFFLAGS, &IfReq) == -1) {
++                    my_log( LOG_ERR, errno, "buildIfVc: ioctl SIOCSIFFLAGS set IFF_PROMISC for %s", IfDescEp->Name );
++                }
++                else my_log( LOG_DEBUG, 0, "buildIfVc: ioctl SIOCSIFFLAGS set IFF_PROMISC for %s", IfDescEp->Name );
++            }
+             // Debug log the result...
+             my_log( LOG_DEBUG, 0, "buildIfVc: Interface %s Addr: %s, Flags: 0x%04x, Network: %s",
+                  IfDescEp->Name,

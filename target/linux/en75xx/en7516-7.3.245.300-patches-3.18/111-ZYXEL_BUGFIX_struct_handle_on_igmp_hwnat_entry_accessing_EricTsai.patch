@@ -1,0 +1,15 @@
+Index: linux-ecn/net/bridge/ecnt_br.c
+===================================================================
+--- linux-ecn.orig/net/bridge/ecnt_br.c	2019-10-23 09:35:44.587012368 +0800
++++ linux-ecn/net/bridge/ecnt_br.c	2019-10-23 09:38:34.855007456 +0800
+@@ -508,8 +508,8 @@
+ 
+ 	hash = br_ip_hash_for_export(mdb, &group);
+ 	mp = br_multicast_get_group(br, port, &group, hash);
+-
+-	if (mp==NULL)
++	if (mp==NULL || PTR_ERR(mp) == -E2BIG || PTR_ERR(mp) == -EEXIST 
++           || PTR_ERR(mp) == -EAGAIN || PTR_ERR(mp) == -ENOMEM || PTR_ERR(mp) == -EINVAL)
+ 	{
+ 		IGMP_HWNAT_DEBUG("mp == NULL");
+ 		return 0;

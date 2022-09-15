@@ -1,0 +1,60 @@
+Index: libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/broadband/zcfg_fe_dal_broadband.c	2020-03-04 15:23:11.887757841 +0800
++++ libzcfg_fe_dal-1.0/network/broadband/zcfg_fe_dal_broadband.c	2020-03-04 15:26:54.863766208 +0800
+@@ -2109,19 +2109,13 @@
+ 			json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
+ #endif
+ 		}
+-#endif	
++#endif
+ 		else{
+-#ifndef ABUE_CUSTOMIZATION			
+ 			if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
+-#endif			
+ 		}
+ 	}
+ 	else{//do nothing for disable to disable
+-#ifdef ABUE_CUSTOMIZATION	
+-		json_object_object_add(igmpObj, "IgmpVersion", json_object_new_int(igmpVersion));
+-#else
+ 		if(igmpObj) {zcfgFeJsonObjFree(igmpObj);}
+-#endif		
+ 	}
+ 
+ 	/* MLD */
+@@ -3256,18 +3250,18 @@
+ 		v6enable = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Enable"));
+ 	}
+ 	else{ //PPPoE or PPPoA
+-		v4enable = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPCPEnable"));
+-		v6enable = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6CPEnable"));
++		v4enable = json_object_get_boolean(json_object_object_get(pppIfaceObj, "IPCPEnable"));
++		v6enable = json_object_get_boolean(json_object_object_get(pppIfaceObj, "IPv6CPEnable"));
+ 	}
+ 
+     /* __ZyXEL__, Albert, 20180209,Support IPv6 option IA_NA and IA_PD  */
+     IPv6Manual_IANA = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Manual_IANA"));
+     IPv6Manual_IAPD = json_object_get_boolean(json_object_object_get(ipIfaceObj, "IPv6Manual_IAPD"));
+ 	IP6Unnumbered = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_IPv6Unnumbered_Model"));
++
+ #ifdef ABUE_CUSTOMIZATION
+ 	Enable_DSLite = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_Enable_DSLite"));
+-#endif
+-#ifdef ABUE_CUSTOMIZATION
++
+ 	if(v4enable && v6enable && !Enable_DSLite)
+ 		strcpy(CurrIpMode, "DualStack");
+ 	else if(v4enable && v6enable && Enable_DSLite)
+@@ -4244,9 +4238,8 @@
+ #endif
+ 	}
+ #ifdef ABUE_CUSTOMIZATION
+-		Enable_DSLite = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_Enable_DSLite"));
+-#endif	
+-#ifdef ABUE_CUSTOMIZATION
++	Enable_DSLite = json_object_get_boolean(json_object_object_get(ipIfaceObj, "X_ZYXEL_Enable_DSLite"));
++
+ 	if(v4enable && v6enable && !Enable_DSLite)
+ 		strcpy(CurrIpMode, "DualStack");
+ 	else if(v4enable && v6enable && Enable_DSLite)

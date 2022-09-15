@@ -1,0 +1,101 @@
+Index: bridge-utils-1.0.6/brctl/brctl_cmd.c
+===================================================================
+--- bridge-utils-1.0.6.orig/brctl/brctl_cmd.c	2021-03-10 16:35:50.127803759 +0800
++++ bridge-utils-1.0.6/brctl/brctl_cmd.c	2021-03-10 16:36:00.146753190 +0800
+@@ -315,6 +315,7 @@
+ 	return 0;
+ }
+ 
++
+ static int show_bridge(const char *name, void *arg)
+ {
+ 	struct bridge_info info;
+@@ -342,6 +343,7 @@
+ 	return 0;
+ }
+ 
++
+ static int compare_fdbs(const void *_f0, const void *_f1)
+ {
+ 	const struct fdb_entry *f0 = _f0;
+@@ -646,7 +648,69 @@
+ 	}
+ 	return 0;
+ }
++static int show_igmptb(const char *brname, void *arg)
++{
++#define CHUNK 128
++	int i, n;
++	struct mc_fdb_entry *fdb = NULL;
++	int offset = 0;
++#if defined(ZYXEL_PATCH)
++	char ifName[IFNAMSIZ];
++#endif
+ 
++	for(;;) {
++		fdb = realloc(fdb, (offset + CHUNK) * sizeof(struct mc_fdb_entry));
++		if (!fdb) {
++			fprintf(stderr, "Out of memory\n");
++			return 1;
++		}
++			
++		n = br_read_mc_fdb(brname, fdb+offset, offset, CHUNK);
++		if (n == 0)
++			break;
++
++		if (n < 0) {
++			fprintf(stderr, "read of forward table failed: %s\n",
++				strerror(errno));
++			return 1;
++		}
++
++		offset += n;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)		
++		if(n < CHUNK)
++			break;
++#endif		
++	}
++
++	qsort(fdb, offset, sizeof(struct mc_fdb_entry), compare_fdbs);
++	
++	for (i = 0; i < offset; i++) {
++		const struct mc_fdb_entry *f = fdb + i;
++		
++#if defined(ZYXEL_PATCH)		
++		ifName[0] = 0;
++		if(!get_ifname(brname, f->port_no, ifName)){
++			printf("%s \t", ifName);
++		}
++#endif
++		printf("%s \t", f->group_addr);
++		printf("%.2x:%.2x:%.2x:%.2x:%.2x:%.2x \t",
++			       f->host_addr[0], f->host_addr[1], f->host_addr[2],
++			       f->host_addr[3], f->host_addr[4], f->host_addr[5]);
++		printf("\n");
++
++	}
++	return 0;
++}
++
++
++static int br_cmd_showigmptb(int argc, char *const* argv)
++{
++	printf("Interface  group addr   host addr\n");
++	
++	br_foreach_bridge(show_igmptb, NULL);
++	return 0;
++}
+ #endif
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)
+@@ -835,6 +899,10 @@
+ 	  "<bridge> {on|off}\tturn snoop dbg on/off" },
+ 	{ 1, "showsnoop", br_cmd_showigmp, 
+ 	  "<bridge>\t\tshow a list of multicast addrs"},
++	#ifdef ZYXEL_MCAST_STATUS	  
++	{ 0, "showsnooptb", br_cmd_showigmptb, 
++	  "\t\t\tshow multicast addrs table"},
++	#endif
+ #endif
+ #endif
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)

@@ -1,0 +1,13 @@
+Index: libzcfg_fe_dal-1.0/network/wireless/zcfg_fe_dal_wifi_general.c
+===================================================================
+--- libzcfg_fe_dal-1.0.orig/network/wireless/zcfg_fe_dal_wifi_general.c	2019-12-18 16:55:49.441869129 +0800
++++ libzcfg_fe_dal-1.0/network/wireless/zcfg_fe_dal_wifi_general.c	2019-12-18 16:57:51.293865614 +0800
+@@ -2454,7 +2454,7 @@
+ 	IID_INIT(ssidIid);
+ 	ssidIid.level = 1;
+ 	ssidIid.idx[0] = ssidIndex;
+-	if(zcfgFeObjJsonGetNextWithoutUpdate(RDM_OID_WIFI_SSID, &ssidIid, &ssidObj) == ZCFG_SUCCESS) {
++	if(zcfgFeObjJsonGetWithoutUpdate(RDM_OID_WIFI_SSID, &ssidIid, &ssidObj) == ZCFG_SUCCESS) {
+ 		LowerLayer = json_object_get_string(json_object_object_get(ssidObj, "LowerLayers"));
+ 		sscanf(LowerLayer, "WiFi.Radio.%hhu", &radioIndex);
+ 		json_object_put(ssidObj);
