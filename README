@@ -1,3 +1,6 @@
+(nezbednik's note: DO NOT GIT CLONE AND TRY TO COMPILE THIS REPOSITORY!
+the code might be broken. Download the full source from the releases!)
+
 This is the buildsystem for the OpenWrt Linux distribution.
 
 Please use "make menuconfig" to configure your appreciated
